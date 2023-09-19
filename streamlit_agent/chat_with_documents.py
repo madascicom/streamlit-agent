@@ -4,23 +4,15 @@ import streamlit as st
 from langchain.chat_models import ChatOpenAI
 from langchain.document_loaders import PyPDFLoader
 from langchain.memory import ConversationBufferMemory
+from langchain.memory.chat_message_histories import StreamlitChatMessageHistory
 from langchain.embeddings import HuggingFaceEmbeddings
 from langchain.callbacks.base import BaseCallbackHandler
 from langchain.chains import ConversationalRetrievalChain
 from langchain.vectorstores import DocArrayInMemorySearch
 from langchain.text_splitter import RecursiveCharacterTextSplitter
-from langchain import HuggingFaceHub
-from langchain.chains import RetrievalQA
 
-st.set_page_config(page_title="Workshop AI: Chat cu propriile documente", page_icon="🤖")
-st.title("Chat cu propriile documente")
-st.markdown("""
-Interfață pentru participanții la <a href=https://comunicarestiintifica.ro/workshop-ai-module-avansate/ target=_blank>Workshopul "AI cu propriile documente".</a>
-
-Nu uita: Această aplicație este utilă pentru a afla detalii din pdf-urile tale, nu pentru sumarizare.
-
-Aplicația îți arată și sursele din care a dedus răspunsul, așa că dacă ai dubii, poți verifica adevărul.
-""", unsafe_allow_html=True)
+st.set_page_config(page_title="LangChain: Chat with Documents", page_icon="🦜")
+st.title("🦜 LangChain: Chat with Documents")
 
 
 @st.cache_resource(ttl="1h")
@@ -36,7 +28,7 @@ def configure_retriever(uploaded_files):
         docs.extend(loader.load())
 
     # Split documents
-    text_splitter = RecursiveCharacterTextSplitter(chunk_size=1000, chunk_overlap=100)
+    text_splitter = RecursiveCharacterTextSplitter(chunk_size=1500, chunk_overlap=200)
     splits = text_splitter.split_documents(docs)
 
     # Create embeddings and store in vectordb
@@ -53,66 +45,74 @@ class StreamHandler(BaseCallbackHandler):
     def __init__(self, container: st.delta_generator.DeltaGenerator, initial_text: str = ""):
         self.container = container
         self.text = initial_text
+        self.run_id_ignore_token = None
+
+    def on_llm_start(self, serialized: dict, prompts: list, **kwargs):
+        # Workaround to prevent showing the rephrased question as output
+        if prompts[0].startswith("Human"):
+            self.run_id_ignore_token = kwargs.get("run_id")
 
     def on_llm_new_token(self, token: str, **kwargs) -> None:
+        if self.run_id_ignore_token == kwargs.get("run_id", False):
+            return
         self.text += token
         self.container.markdown(self.text)
 
 
 class PrintRetrievalHandler(BaseCallbackHandler):
     def __init__(self, container):
-        self.container = container.expander("Surse răspuns")
+        self.status = container.status("**Context Retrieval**")
 
-    def on_retriever_start(self, query: str, **kwargs):
-        self.container.write(f"**Question:** {query}")
+    def on_retriever_start(self, serialized: dict, query: str, **kwargs):
+        self.status.write(f"**Question:** {query}")
+        self.status.update(label=f"**Context Retrieval:** {query}")
 
     def on_retriever_end(self, documents, **kwargs):
-        # self.container.write(documents)
         for idx, doc in enumerate(documents):
             source = os.path.basename(doc.metadata["source"])
-            self.container.write(f"**Document {idx} from {source}**")
-            self.container.markdown(doc.page_content)
+            self.status.write(f"**Document {idx} from {source}**")
+            self.status.markdown(doc.page_content)
+        self.status.update(state="complete")
 
 
-huggingfacehub_api_token = st.sidebar.text_input("token_personal", type="password")
-if not huggingfacehub_api_token:
-    st.info("Pasul 1: Te rog adaugă token_personal obținut la workshop în bara din stânga (pe laptop). Pe mobil, apasă pe semnul > din stânga sus.")
+openai_api_key = st.sidebar.text_input("OpenAI API Key", type="password")
+if not openai_api_key:
+    st.info("Please add your OpenAI API key to continue.")
     st.stop()
 
 uploaded_files = st.sidebar.file_uploader(
     label="Upload PDF files", type=["pdf"], accept_multiple_files=True
 )
 if not uploaded_files:
-    st.info("Pasul 2: Încarcă unul sau mai multe PDF-uri")
+    st.info("Please upload PDF documents to continue.")
     st.stop()
 
 retriever = configure_retriever(uploaded_files)
 
 # Setup memory for contextual conversation
-#memory = ConversationBufferMemory(memory_key="chat_history", return_messages=True)
+msgs = StreamlitChatMessageHistory()
+memory = ConversationBufferMemory(memory_key="chat_history", chat_memory=msgs, return_messages=True)
 
 # Setup LLM and QA chain
-llm = HuggingFaceHub(repo_id="declare-lab/flan-alpaca-large", huggingfacehub_api_token=huggingfacehub_api_token, model_kwargs={"temperature":0, "max_length":512})
-qa_chain = RetrievalQA.from_llm(
-    llm, retriever=retriever, verbose=True
+llm = ChatOpenAI(
+    model_name="gpt-3.5-turbo", openai_api_key=openai_api_key, temperature=0, streaming=True
+)
+qa_chain = ConversationalRetrievalChain.from_llm(
+    llm, retriever=retriever, memory=memory, verbose=True
 )
 
-if "messages" not in st.session_state or st.sidebar.button("Clear message history"):
-    st.session_state["messages"] = [{"role": "assistant", "content": "How can I help you?"}]
+if len(msgs.messages) == 0 or st.sidebar.button("Clear message history"):
+    msgs.clear()
+    msgs.add_ai_message("How can I help you?")
 
-for msg in st.session_state.messages:
-    st.chat_message(msg["role"]).write(msg["content"])
+avatars = {"human": "user", "ai": "assistant"}
+for msg in msgs.messages:
+    st.chat_message(avatars[msg.type]).write(msg.content)
 
-user_query = st.chat_input(placeholder="Adresează o întrebare!")
-real_query = f"{user_query} Give as much context about the answer as possible. If you cannot find the answer in the documents, say that you don't know the answer."
-
-if user_query:
-    st.session_state.messages.append({"role": "user", "content": user_query})
+if user_query := st.chat_input(placeholder="Ask me anything!"):
     st.chat_message("user").write(user_query)
 
     with st.chat_message("assistant"):
         retrieval_handler = PrintRetrievalHandler(st.container())
         stream_handler = StreamHandler(st.empty())
-        response = qa_chain.run(real_query, callbacks=[stream_handler, retrieval_handler])
-        st.write(response)
-        st.session_state.messages.append({"role": "assistant", "content": response})
+        response = qa_chain.run(user_query, callbacks=[retrieval_handler, stream_handler])
