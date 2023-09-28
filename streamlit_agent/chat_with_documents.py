@@ -11,8 +11,10 @@ from langchain.chains import ConversationalRetrievalChain
 from langchain.vectorstores import DocArrayInMemorySearch
 from langchain.text_splitter import RecursiveCharacterTextSplitter
 
-st.set_page_config(page_title="LangChain: Chat with Documents", page_icon="🦜")
-st.title("🦜 LangChain: Chat with Documents")
+st.set_page_config(page_title="De vorbă cu documentele tale", page_icon="🦜")
+st.title("🦜 De vorbă cu documentele tale")
+st.markdown("Această aplicație este destinată participanților la Workshopul de Inteligență Artificială, organizat de Știință și Comunicare. [comunicarestiintifica.ro](https://comunicarestiintifica.ro/)")
+st.description("
 
 
 @st.cache_resource(ttl="1h")
@@ -77,7 +79,7 @@ class PrintRetrievalHandler(BaseCallbackHandler):
 
 openai_api_key = st.sidebar.text_input("OpenAI API Key", type="password")
 if not openai_api_key:
-    st.info("Please add your OpenAI API key to continue.")
+    st.info("În bara din stânga, adăuga cheia de OpenAI / Please add your OpenAI API key to continue.")
     st.stop()
 
 uploaded_files = st.sidebar.file_uploader(
