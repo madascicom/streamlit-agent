@@ -14,7 +14,6 @@ from langchain.text_splitter import RecursiveCharacterTextSplitter
 st.set_page_config(page_title="De vorbă cu documentele tale", page_icon="🦜")
 st.title("🦜 De vorbă cu documentele tale")
 st.markdown("Această aplicație este destinată participanților la Workshopul de Inteligență Artificială, organizat de Știință și Comunicare. [comunicarestiintifica.ro](https://comunicarestiintifica.ro/)")
-st.description("
 
 
 @st.cache_resource(ttl="1h")
