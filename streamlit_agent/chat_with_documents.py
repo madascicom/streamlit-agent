@@ -37,7 +37,7 @@ def configure_retriever(uploaded_files):
     vectordb = DocArrayInMemorySearch.from_documents(splits, embeddings)
 
     # Define retriever
-    retriever = vectordb.as_retriever(search_type="mmr", search_kwargs={"k": 2, "fetch_k": 4})
+    retriever = vectordb.as_retriever(search_type="mmr", search_kwargs={"k": 4, "fetch_k": 4})
 
     return retriever
 
@@ -96,7 +96,7 @@ memory = ConversationBufferMemory(memory_key="chat_history", chat_memory=msgs, r
 
 # Setup LLM and QA chain
 llm = ChatOpenAI(
-    model_name="gpt-3.5-turbo", openai_api_key=openai_api_key, temperature=0, streaming=True
+    model_name="gpt-3.5-turbo-16k", openai_api_key=openai_api_key, temperature=0, streaming=True
 )
 qa_chain = ConversationalRetrievalChain.from_llm(
     llm, retriever=retriever, memory=memory, verbose=True
