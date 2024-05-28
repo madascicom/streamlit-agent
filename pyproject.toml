@@ -21,7 +21,7 @@ langchain-experimental = "^0.0.10"
 streamlit = ">=1.26"
 docarray = "^0.38.0"
 hnswlib = "^0.7.0"
-langchain_groq = "^0.1.0"
+langchain-groq
 
 [tool.poetry.group.dev.dependencies]
 black = "^23.3.0"
