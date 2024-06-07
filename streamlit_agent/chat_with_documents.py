@@ -104,7 +104,7 @@ qa_chain = ConversationalRetrievalChain.from_llm(
 
 if len(msgs.messages) == 0 or st.sidebar.button("Clear message history"):
     msgs.clear()
-    msgs.add_ai_message("How can I help you?")
+    msgs.add_ai_message("Întreabă ceva ce vrei să știi din aceste articole științifice.")
 
 avatars = {"human": "user", "ai": "assistant"}
 for msg in msgs.messages:
