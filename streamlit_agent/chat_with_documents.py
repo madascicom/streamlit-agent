@@ -11,8 +11,8 @@ from langchain.chains import ConversationalRetrievalChain
 from langchain.vectorstores import DocArrayInMemorySearch
 from langchain.text_splitter import RecursiveCharacterTextSplitter
 
-st.set_page_config(page_title="De vorbă cu documentele tale", page_icon="🦜")
-st.title("🦜 De vorbă cu documentele tale")
+st.set_page_config(page_title="Răspunsuri din articolele științifice", page_icon="🦜")
+st.title("🦜 Răspunsuri din articolele științifice")
 st.markdown("Această aplicație este destinată participanților la Workshopul de Inteligență Artificială, organizat de Știință și Comunicare. [comunicarestiintifica.ro](https://comunicarestiintifica.ro/)")
 
 
@@ -110,7 +110,7 @@ avatars = {"human": "user", "ai": "assistant"}
 for msg in msgs.messages:
     st.chat_message(avatars[msg.type]).write(msg.content)
 
-if user_query := st.chat_input(placeholder="Ask me anything!"):
+if user_query := st.chat_input(placeholder="Întreabă ceva din lucrările științifice pe care vrei să le analizezi"):
     st.chat_message("user").write(user_query)
 
     with st.chat_message("assistant"):
