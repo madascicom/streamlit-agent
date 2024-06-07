@@ -11,8 +11,8 @@ from langchain.chains import ConversationalRetrievalChain
 from langchain.vectorstores import DocArrayInMemorySearch
 from langchain.text_splitter import RecursiveCharacterTextSplitter
 
-st.set_page_config(page_title="Vorbește cu articole științifice", page_icon="🦜")
-st.title("🦜 Vorbește cu articolele științifice")
+st.set_page_config(page_title="Vorbește cu articole științifice", page_icon="🔬")
+st.title("💬🔬 Vorbește cu articolele științifice")
 st.markdown("Această aplicație este destinată participanților la Workshopul de Inteligență Artificială, organizat de Știință și Comunicare. [comunicarestiintifica.ro](https://comunicarestiintifica.ro/)")
 
 
